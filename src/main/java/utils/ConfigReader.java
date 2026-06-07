@@ -10,28 +10,29 @@ public class ConfigReader {
     static {
         try {
             properties = new Properties();
-            // Menggunakan lokasi file sesuai proyek Anda
             FileInputStream fis = new FileInputStream("src/test/resources/config.properties");
             properties.load(fis);
             fis.close();
-        } catch (IOException e) {
-            // JANGAN langsung lempar RuntimeException agar runner GitHub Actions tidak crash saat file config absen
-            System.out.println("⚠️ Warning: File config.properties tidak ditemukan di lokal. Mencoba membaca dari Environment Variables...");
+            System.out.println("Sukses: File config.properties berhasil dimuat.");
+        } catch (Throwable t) {
+            // Menangkap SEGALA jenis error (termasuk runtime exception akibat salah ketik di properti)
+            // sehingga pembacaan via Environment Variables di GitHub Actions/Gradle tetap bisa berjalan aman.
+            properties = null;
+            System.out.println("Warning: File config.properties tidak dapat dimuat (" + t.getMessage() + "). Mencoba fallback ke Environment Variables...");
         }
     }
 
     public static String getProperty(String key) {
-        // 1. Cek apakah ada Environment Variable dari GitHub Actions terlebih dahulu
+        // 1. Cek apakah ada Environment Variable (untuk GitHub Actions)
         String envValue = System.getenv(key);
         if (envValue != null && !envValue.isEmpty()) {
             return envValue;
         }
 
-        // 2. Jika tidak ada (seperti saat running lokal di IntelliJ), baca dari file config.properties asli
+        // 2. Jika tidak ada, baca dari file config.properties lokal
         if (properties != null) {
             return properties.getProperty(key);
         }
-
         return null;
     }
 
